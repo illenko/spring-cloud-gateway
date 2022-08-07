@@ -1,5 +1,7 @@
 package com.illenko.gateway.properties
 
+import com.illenko.gateway.dto.Client
+import com.illenko.gateway.dto.Service
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.boot.context.properties.ConstructorBinding
 

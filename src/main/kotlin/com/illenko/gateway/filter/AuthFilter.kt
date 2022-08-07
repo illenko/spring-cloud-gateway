@@ -1,8 +1,8 @@
 package com.illenko.gateway.filter
 
-import com.illenko.gateway.config.RedisHashComponent
+import com.illenko.gateway.config.RedisCache
 import com.illenko.gateway.config.RoutesConfig
-import com.illenko.gateway.dto.ApiKey
+import com.illenko.gateway.dto.Client
 import com.illenko.gateway.util.MapperUtils
 import mu.KotlinLogging
 import org.springframework.cloud.gateway.filter.GatewayFilterChain
@@ -16,35 +16,31 @@ import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 
-
 @Component
-class AuthFilter(private val redisHashComponent: RedisHashComponent) : GlobalFilter, Ordered {
+class AuthFilter(private val redisCache: RedisCache) : GlobalFilter, Ordered {
+
     private val log = KotlinLogging.logger {}
 
-    override fun filter(exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void>? {
-        val apiKeyHeader = exchange.request.headers["key"]
-        log.info("api key {} ", apiKeyHeader)
-        val routeId = exchange.getAttribute<Route?>(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR)?.id
+    override fun filter(exchange: ServerWebExchange, chain: GatewayFilterChain): Mono<Void> {
 
-        if (routeId == null || apiKeyHeader == null || apiKeyHeader.isEmpty() || !isAuthorize(
-                routeId, apiKeyHeader.first()
-            )
-        ) {
-            throw ResponseStatusException(
-                HttpStatus.UNAUTHORIZED, "you can't consume this service , Please validate your apikeys"
-            )
+        val apiKeyHeader = exchange.request.headers["key"]
+        val routeId = exchange.getAttribute<Route?>(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR)?.id
+        log.debug("Handled request with API Key: $apiKeyHeader and routeId: $routeId")
+
+        if (routeId == null || apiKeyHeader == null || !isAuthorized(routeId, apiKeyHeader.first())) {
+            log.debug { "Request is not authorized" }
+            throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "Request is not authorized")
         }
+
         return chain.filter(exchange)
     }
 
-    override fun getOrder(): Int {
-        return Ordered.LOWEST_PRECEDENCE
-    }
+    override fun getOrder() = Ordered.LOWEST_PRECEDENCE
 
-    private fun isAuthorize(routeId: String, apiKey: String): Boolean {
-        val apiKeyObject = redisHashComponent.get(RoutesConfig.RECORDS_KEY, apiKey)
+    private fun isAuthorized(routeId: String, apiKey: String): Boolean {
+        val apiKeyObject = redisCache.get(RoutesConfig.RECORDS_KEY, apiKey)
         return if (apiKeyObject != null) {
-            val (_, services) = MapperUtils.map(apiKeyObject, ApiKey::class.java)
+            val (_, _, services) = MapperUtils.map(apiKeyObject, Client::class.java)
             services.contains(routeId)
         } else {
             false

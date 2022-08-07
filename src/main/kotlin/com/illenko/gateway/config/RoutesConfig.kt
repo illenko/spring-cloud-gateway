@@ -1,6 +1,5 @@
 package com.illenko.gateway.config
 
-import com.illenko.gateway.dto.ApiKey
 import com.illenko.gateway.properties.GatewayProperties
 import org.springframework.cloud.gateway.route.RouteLocator
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder
@@ -12,14 +11,13 @@ import javax.annotation.PostConstruct
 
 @Configuration
 class RoutesConfig(
-    private val redisHashComponent: RedisHashComponent, private val gatewayProperties: GatewayProperties
+    private val redisCache: RedisCache,
+    private val gatewayProperties: GatewayProperties
 ) {
     @PostConstruct
     fun initKeysToRedis() {
-        val apiKeys = gatewayProperties.clients.map { ApiKey(it.key, it.permissions) }
-        val keys = redisHashComponent.values(RECORDS_KEY)
-        if (keys.isEmpty()) {
-            apiKeys.forEach(Consumer { redisHashComponent.set(RECORDS_KEY, it.key, it) })
+        if (redisCache.values(RECORDS_KEY).isEmpty()) {
+            gatewayProperties.clients.forEach(Consumer { redisCache.set(RECORDS_KEY, it.key, it) })
         }
     }
 
@@ -27,8 +25,8 @@ class RoutesConfig(
     fun customRouteLocator(builder: RouteLocatorBuilder): RouteLocator {
         val rouses = builder.routes()
         gatewayProperties.services.forEach { service ->
-            rouses.route(service.key) { r ->
-                r.path("${service.path}/**").filters { it.stripPrefix(service.prefix) }.uri(service.url)
+            rouses.route(service.key) { route ->
+                route.path("${service.path}/**").filters { it.stripPrefix(service.prefix) }.uri(service.url)
             }
         }
         return rouses.build()

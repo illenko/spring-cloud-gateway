@@ -13,13 +13,13 @@ gateway:
     -
       name: limited
       key: c2bac05d-1097-4f53-add3-492b17853350
-      permissions: 
+      services: 
         - movies-service
         - music-service-v1
     -
       name: full
       key: 3546c9bd-1a32-4742-90b9-86e112287eca
-      permissions:
+      services:
         - movies-service
         - music-service-v1
         - music-service-v2

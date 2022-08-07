@@ -1,6 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 val kotlinLoggingVersion: String by project
+val smartExceptionVersion: String by project
 
 plugins {
     id("org.springframework.boot") version "2.7.2"
@@ -39,8 +40,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.springframework.cloud:spring-cloud-starter-gateway")
     implementation("redis.clients:jedis")
-
     implementation("io.github.microutils:kotlin-logging-jvm:$kotlinLoggingVersion")
+    implementation("com.arthenica:smart-exception-logback:$smartExceptionVersion")
+    
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
 }
