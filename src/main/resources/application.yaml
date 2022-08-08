@@ -4,6 +4,28 @@ spring:
   redis:
     port: 6379
     host: localhost
+    
+  cloud:
+    gateway:
+      routes:
+        - id: movies-service
+          uri: http://localhost:8083
+          predicates:
+            - Path=/api/movies/**
+          filters:
+            - RewritePath=/api/movies/(?<segment>.*), /$\{segment}
+        - id: music-service-v1
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/music/v1/**
+          filters:
+            - RewritePath=/api/music/v1/(?<segment>.*), /v1/$\{segment}
+        - id: music-service-v2
+          uri: http://localhost:8084
+          predicates:
+            - Path=/api/music/v2/**
+          filters:
+            - RewritePath=/api/music/v2/(?<segment>.*), /v2/$\{segment}
 
 server:
   port: 8080
@@ -23,20 +45,3 @@ gateway:
         - movies-service
         - music-service-v1
         - music-service-v2
-
-  services:
-    -
-      key: movies-service
-      url: http://localhost:8083
-      path: /api/movies
-      prefix: 2
-    -
-      key: music-service-v1
-      url: http://localhost:8084
-      path: /api/music/v1
-      prefix: 3
-    -
-      key: music-service-v2
-      url: http://localhost:8084
-      path: /api/music/v2
-      prefix: 3
